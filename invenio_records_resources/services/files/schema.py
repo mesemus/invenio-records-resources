@@ -25,7 +25,7 @@ from marshmallow import (
 from marshmallow.fields import UUID, Dict, Integer, Str
 from marshmallow_utils.fields import GenMethod, Links, SanitizedUnicode, TZDateTime
 
-from .transfer import TransferType
+from .transfer import BaseTransfer, Transfer
 
 
 class InitFileSchema(Schema):
@@ -88,7 +88,8 @@ class InitFileSchema(Schema):
             data["uri"] = data.file.uri
 
             # If Local -> remove uri as it contains internal file storage info
-            if not TransferType(data["storage_class"]).is_serializable():
+            transfer: BaseTransfer = Transfer.get_transfer(data["storage_class"])
+            if not transfer.transfer_type.is_serializable:
                 data.pop("uri")
 
             # optional fields
@@ -112,7 +113,7 @@ class FileSchema(InitFileSchema):
     created = TZDateTime(timezone=timezone.utc, format="iso", dump_only=True)
     updated = TZDateTime(timezone=timezone.utc, format="iso", dump_only=True)
 
-    status = GenMethod("dump_status")
+    status = Str(dump_only=True)
     metadata = Dict(dump_only=True)
     mimetype = Str(dump_only=True, attribute="file.mimetype")
     version_id = UUID(attribute="file.version_id")
@@ -120,15 +121,3 @@ class FileSchema(InitFileSchema):
     bucket_id = UUID(attribute="file.bucket_id")
 
     links = Links()
-
-    def dump_status(self, obj):
-        """Dump file status."""
-        # due to time constraints the status check is done here
-        # however, ideally this class should not need knowledge of
-        # the TransferType class, it should be encapsulated at File
-        # wrapper class or lower.
-        has_file = obj.file is not None
-        if has_file and TransferType(obj.file.storage_class).is_completed:
-            return "completed"
-
-        return "pending"

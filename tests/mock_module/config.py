@@ -14,7 +14,7 @@ from invenio_records_resources.services import (
     RecordServiceConfig,
     SearchOptions,
 )
-from invenio_records_resources.services.files.links import FileLink
+from invenio_records_resources.services.files.links import FileLink, TransferLinks
 from invenio_records_resources.services.records.components import FilesComponent
 from invenio_records_resources.services.records.config import SearchOptions
 from invenio_records_resources.services.records.facets import (
@@ -102,4 +102,5 @@ class MockFileServiceConfig(FileServiceConfig):
         "self": FileLink("{+api}/mocks/{id}/files/{key}"),
         "content": FileLink("{+api}/mocks/{id}/files/{key}/content"),
         "commit": FileLink("{+api}/mocks/{id}/files/{key}/commit"),
+        "transfer": TransferLinks("{+api}/mocks/{id}/files/{+key}")
     }

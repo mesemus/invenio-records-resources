@@ -15,8 +15,9 @@ from .components import (
     FileContentComponent,
     FileMetadataComponent,
     FileProcessorComponent,
+    FileMultipartContentComponent,
 )
-from .links import FileLink
+from .links import FileLink, TransferLinks
 from .processors import ImageMetadataExtractor
 from .results import FileItem, FileList
 from .schema import FileSchema
@@ -48,11 +49,13 @@ class FileServiceConfig(ServiceConfig):
     file_links_item = {
         "self": FileLink("{+api}/records/{id}/files/{+key}"),
         "content": FileLink("{+api}/records/{id}/files/{+key}/content"),
+        "transfer": TransferLinks("{+api}/records/{id}/files/{+key}")
     }
 
     components = [
         FileMetadataComponent,
         FileContentComponent,
+        FileMultipartContentComponent,
         FileProcessorComponent,
     ]
 

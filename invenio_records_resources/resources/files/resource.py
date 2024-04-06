@@ -50,6 +50,14 @@ request_stream = request_body_parser(
     default_content_type="application/octet-stream",
 )
 
+request_multipart_args = request_parser(
+    {
+        "pid_value": ma.fields.Str(required=True),
+        "key": ma.fields.Str(), "part": ma.fields.Int()
+    },
+    location="view_args",
+)
+
 
 #
 # Resource
@@ -225,6 +233,28 @@ class FileResource(ErrorHandlersMixin, Resource):
             g.identity,
             resource_requestctx.view_args["pid_value"],
             resource_requestctx.view_args["key"],
+            resource_requestctx.data["request_stream"],
+            content_length=resource_requestctx.data["request_content_length"],
+        )
+
+        # if errors are set then there was a `TransferException` raised
+        if item.to_dict().get("errors"):
+            raise FailedFileUploadException(
+                file_key=item.file_id, recid=item.id, file=item.to_dict()
+            )
+
+        return item.to_dict(), 200
+
+    @request_multipart_args
+    @request_stream
+    @response_handler()
+    def update_multipart_content(self):
+        """Upload file content."""
+        item = self.service.set_multipart_file_content(
+            g.identity,
+            resource_requestctx.view_args["pid_value"],
+            resource_requestctx.view_args["key"],
+            resource_requestctx.view_args["part"],
             resource_requestctx.data["request_stream"],
             content_length=resource_requestctx.data["request_content_length"],
         )

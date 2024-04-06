@@ -36,11 +36,12 @@ necessarily persisted in the metadata.
                 'version_id': '<object-version-id>',
                 'bucket_id': '<bucket-id>',
                 'file_id': '<file-id>,
-                'storage_class': 'A'
+                'storage_class': 'L'
                 'key': 'paper.pdf',
                 'mimetype': 'application/pdf',
                 'size': 12345,
                 'checksum': 'md5:abcdef...',
+                'status': 'completed'
             },
             'data.zip': {...},
             'figure.png': {...},
@@ -63,6 +64,8 @@ from invenio_files_rest.errors import (
 )
 from invenio_files_rest.models import Bucket, FileInstance, ObjectVersion
 from sqlalchemy import insert
+
+from .status import FileStatus
 
 
 def ensure_enabled(func):
@@ -161,8 +164,11 @@ class FilesManager(MutableMapping):
             raise InvalidKeyError(description=f"File with key {key} already exists.")
 
         rf = self.file_cls.create({}, key=key, record_id=self.record.id)
+        rf.status = FileStatus.PENDING
+
         if stream:
             obj = ObjectVersion.create(self.bucket, key, stream=stream, **kwargs)
+
         if obj:
             if isinstance(obj, dict):
                 fi = FileInstance.create()
@@ -172,6 +178,7 @@ class FilesManager(MutableMapping):
             rf.object_version = obj
         if data:
             rf.metadata = data
+
         rf.commit()
         self._entries[key] = rf
         return rf
@@ -209,6 +216,10 @@ class FilesManager(MutableMapping):
         if not file_obj:
             raise Exception(f"File with key {file_key} not uploaded yet.")
         self[file_key] = file_obj
+
+        rf = self.get(file_key)
+        rf.status = FileStatus.COMPLETED
+        rf.commit()
 
     @ensure_enabled
     def delete(self, key, remove_obj=True, softdelete_obj=True, remove_rf=False):

@@ -129,6 +129,8 @@ class FileRecord(RecordBase, SystemFieldsMixin):
     record_id = ModelField()
     _record = ModelField("record", dump=False)
 
+    status = DictField()
+
     def __repr__(
         self,
     ):
